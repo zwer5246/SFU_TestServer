@@ -1,0 +1,66 @@
+﻿@model List<MessagesModels.Models.RoomModel>
+@{
+    ViewData["Title"] = "Sessions list";
+}
+
+<head>
+    <title>Login</title>
+</head>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error alert-dismissible d-flex align-items-end" role="alert">
+        <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusInformation.svg"/>
+        <div>
+            <label>Join room error. "<img alt="DownloadClientIcon" class="icon-secondary" src="~/img/icons/NewWebSite.svg"/>Start Web Session" button to create new one.</label>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}
+@if (Model.Capacity <= 0)
+{
+    <div class="alert alert-primary alert-dismissible d-flex align-items-end" role="alert">
+        <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusInformation.svg"/>
+        <div>
+            <label>Sessions list is empty. Use "<img alt="DownloadClientIcon" class="icon-secondary" src="~/img/icons/NewWebSite.svg"/>Start Web Session" button to create new one.</label>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}
+<h1>List of all active sessions.</h1>
+<h3>You can connect to every sessions, but some of them might be locked.</h3>
+
+<table class="table"> 
+    <thead>
+    <tr>
+        <th style="width: 24px">ID</th>
+        <th>Room name</th>
+        <th>Capacity</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var session in Model)
+    {
+        <tr>
+            <td>@session.Id</td>
+            <td>@session.Name</td>
+            <td>@session.Capacity</td>
+            <td class="d-flex ">
+                <form class="me-2" method="post" asp-route-id="@session.Id">
+                    <button type="submit" class="btn btn-success">Enter</button>
+                </form>
+                <form class="me-2" asp-action="Edit" method="get" asp-route-id="@session.Id">
+                    <button type="submit" class="btn btn-primary">Edit</button>
+                </form>
+                <form class="me-2" asp-action="Delete" method="post" asp-route-id="@session" onsubmit="return confirm('Remove this session?');">
+                    <button type="submit" class="btn btn-danger">Remove</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+<script>
+    
+    
+</script>

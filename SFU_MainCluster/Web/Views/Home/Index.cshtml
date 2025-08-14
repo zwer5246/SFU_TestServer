@@ -1,0 +1,107 @@
+@{
+    ViewData["Title"] = "Main page";
+}
+
+
+<h1>@ViewData["Title"]</h1>
+
+<p>VideoServer launched on <a>45.140.147.236</a> and ready for connections.</p>
+
+
+
+@if (!User.Identity.IsAuthenticated)
+{
+    <div class="alert alert-warning alert-dismissible d-flex align-items-end" role="alert">
+        <img alt="AlertIcon" class="icon-message" src="~/img/icons/IntellisenseWarning.svg"/>
+        <div>
+            <label>Most actions are not available without logging in.</label>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning alert-dismissible d-flex align-items-end" role="alert">
+        <img alt="AlertIcon" class="icon-message" src="~/img/icons/IntellisenseWarning.svg"/>
+        <div>
+            <label>Server launched in debug mode. Additional logs and sensitive information may be displayed.</label>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+    if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible d-flex align-items-end" role="alert">
+            <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusNo.svg"/>
+            <div>
+                <label>@TempData["Error"]</label>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+}
+
+<h2>Actions</h2>
+
+@if (User.Identity.IsAuthenticated)
+{
+    <div class="list-group">
+        <a class="list-group-item list-group-item-action main-page-list" asp-controller="Account" asp-action="Logout">
+            <img class="icon-secondary" src="~/img/icons/LoginUser.svg"/>
+            Log out
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list" asp-controller="Session" asp-action="StartNewSession">
+            <img class="icon-secondary" src="~/img/icons/NewWebSite.svg"/>
+            Start Web Session
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list" asp-controller="Session" asp-action="SessionsList">
+            <img class="icon-secondary" src="~/img/icons/FlatList.svg"/>
+            List all sessions
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list" asp-controller="Sfu" asp-action="ServerStatistics">
+            <img class="icon-secondary" src="~/img/icons/Statistics.svg"/>
+            Server statistics
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list" title="Not available." asp-controller="Sfu" asp-action="ServerLog">
+            <img class="icon-secondary" src="~/img/icons/Console.svg"/>
+            Server log
+            <img class="icon-secondary" src="~/img/icons/StatusOffline.svg"/>
+        </a>
+    </div>
+}
+else
+{
+    <div class="list-group">
+        <a class="list-group-item list-group-item-action main-page-list" asp-controller="Account" asp-action="Login">
+            <img class="icon-secondary" src="~/img/icons/WebCustomASCXControl.svg"/>
+            Log in
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list" as>
+            <img class="icon-secondary" src="~/img/icons/Process.svg"/>
+            Request registration
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list disabled" aria-disabled="true">
+            <img class="icon-secondary" src="~/img/icons/NewWebSite.svg"/>
+            Start Web Session
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list disabled" aria-disabled="true">
+            <img class="icon-secondary" src="~/img/icons/FlatList.svg"/>
+            List all sessions
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list" asp-controller="Sfu" asp-action="ServerStatistics">
+            <img class="icon-secondary" src="~/img/icons/Statistics.svg"/>
+            Server statistics
+        </a>
+        <a class="list-group-item list-group-item-action main-page-list" title="Not available." asp-controller="Sfu" asp-action="ServerLog">
+            <img class="icon-secondary" src="~/img/icons/Console.svg"/>
+            Server log
+            <img class="icon-secondary" src="~/img/icons/StatusOffline.svg"/>
+        </a>
+    </div>
+}
+
+<script>
+
+</script>
+
+
+

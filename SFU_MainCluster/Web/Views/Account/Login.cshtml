@@ -1,0 +1,73 @@
+﻿@model SFU_MainCluster.Web.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Home Page";
+}
+<head>
+    <title>Login</title>
+</head>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible d-flex align-items-end" role="alert">
+        <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusNo.svg"/>
+        <div>
+            <label>@TempData["Error"]</label>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-primary alert-dismissible d-flex align-items-end" role="alert">
+        <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusInformation.svg"/>
+        <div>
+            <label>@TempData["Message"]</label>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}
+<div>
+        <form id="authForm" autocomplete="off" asp-controller="Account" asp-action="Login" novalidate>
+            <div class="mb-3">
+                <label class="form-label">Login</label>
+                <input asp-for="Login" id="loginInput" class="form-control" aria-describedby="emailHelp">
+                <div class="form-text">
+                    <img class="icon-tip" alt="TipIcon" src="~/img/icons/StatusInformation.12.12.svg"/>
+                    Without login and password you can enter as a guest.
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input asp-for="Password" id="passwordInput" type="password" class="form-control">
+            </div>
+            <div class="mb-3 form-check">
+                <input sp-for="RememberMe" type="checkbox" id="rememberMeCheckbox" class="form-check-input">
+                <label class="form-check-label">Remember login data</label>
+            </div>
+            <div class="mb-3 form-check">
+                <input asp-for="IsGuest" type="checkbox" id="authAsGuestCheckbox" class="form-check-input">
+                <label class="form-check-label">Enter as guest</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Log in</button>
+        </form>
+    </div>
+<script>
+    const checkbox = document.getElementById('authAsGuestCheckbox');
+    const form = document.getElementById('authForm');
+
+    checkbox.addEventListener('change', () => 
+    {
+        const elements = form.elements;
+    
+        for (let i = 0; i < elements.length; i++) 
+        {
+            const el = elements[i];
+            
+            if (el !== checkbox && el.type !== 'submit') 
+            {
+                el.disabled = checkbox.checked;
+            }
+        }
+    });
+    
+</script>

@@ -1,0 +1,102 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.wrapper
+{
+  display: flex;
+  flex-direction: column;
+  min-height: 75vh;
+}
+
+.icon-main
+{
+  width:32px; 
+  height:32px;
+}
+
+.icon-secondary
+{
+  width:20px;
+  height:20px;
+  margin-bottom: 3px;
+}
+
+.icon-tip
+{
+  width:16px;
+  height:16px;
+}
+
+.icon-message
+{
+  width:24px;
+  height:24px;
+  margin-right: 4px;
+}
+
+.spinner-main
+{
+  margin-right: 16px;
+  width: 24px;
+  height: 24px;
+}
+
+.loading-label
+{
+  margin-bottom: 6px;
+}
+
+.content {
+  flex: 1;
+}
+
+.footer {
+  margin-top: auto;
+}
+
+.main-page-list
+{
+  max-width: 322px;
+}
+
+.main-page-list img:last-of-type {
+  margin-left: auto;
+}
+
+#fullscreen-container {
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+}
+
+#loadingDiv {
+  flex-shrink: 0; /* фиксированная высота */
+}
+
+#videoCtl {
+  flex-grow: 1;        /* займет всё доступное пространство */
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* или cover, если нужно заполнить весь блок */
+  background-color: black;
+}

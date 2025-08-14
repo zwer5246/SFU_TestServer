@@ -1,0 +1,626 @@
+﻿@model MessagesModels.Models.RoomModel
+@{
+    ViewData["Title"] = "Connecting";
+}
+@if (TempData["Error"] != null)
+{
+    <div id="fullscreen-container">
+        <div class="alert alert-danger alert-dismissible d-flex align-items-end" role="alert">
+            <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusNo.svg"/>
+            <div>
+                <label>Join room failed. @TempData["Error"]</label>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.HostId == @ViewBag.User.Id)
+{
+    <div id="fullscreen-container">
+        <div id="loadingDiv" class="alert alert-primary alert-dismissible d-flex align-items-end" role="alert">
+            <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusInformation.svg"/>
+            <label id="loadingLabel">You are host. Press "<img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusRunningNoColor.svg"/>StartCapture" to start stream.</label>
+        </div>
+        <video id="videoCtl" class="video-stream" autoplay></video>
+        <br/>
+        <div id="buttonsDiv" style="">
+            @if (Model.HostId == @ViewBag.User.Id)
+            {
+                <button id="start" type="button" onclick="startCapture()" class="btn btn-success">
+                    <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusRunningNoColor.svg"/>
+                    Start capture
+                </button>
+            }
+            <button id="goFullscreen" type="button" onclick="toggleFullscreen()" class="btn btn-primary">
+                <img class="icon-message" alt="deniedIcon" src="~/img/icons/AutoSizeOptimize.svg"/>
+                Enter fullscreen mode
+            </button>
+            @if (Model.HostId == @ViewBag.User.Id)
+            {
+                <button id="changeStreamSettings" type="button" onclick="goFullscreen()" class="btn btn-primary">
+                    <img class="icon-message" alt="deniedIcon" src="~/img/icons/Settings.svg"/>
+                    Change stream settings
+                </button>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div id="fullscreen-container">
+        <div id="loadingDiv" class="alert alert-primary alert-dismissible d-flex align-items-end" role="alert">
+            <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusInformation.svg"/>
+            <label id="loadingLabel">Press "<img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusRunningNoColor.svg"/>Connect" button to proceed.</label>
+            </div>
+        <video id="videoCtl" class="video-stream" autoplay></video>
+        <div id="buttonsDiv" style="">
+            @if (Model.HostId == @ViewBag.User.Id)
+            {
+                <button id="start" type="button" onclick="startCapture()" class="btn btn-success">
+                    <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusRunningNoColor.svg"/>
+                    Start capture
+                </button>
+            }
+            <button id="connectButton" type="button" onclick="connect()" class="btn btn-success">
+                <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusRunningNoColor.svg"/>
+                Connect
+            </button>
+            <button id="goFullscreen" type="button" onclick="toggleFullscreen()" class="btn btn-primary">
+                <img class="icon-message" alt="deniedIcon" src="~/img/icons/AutoSizeOptimize.svg"/>
+                Enter fullscreen mode
+            </button>
+            @if (Model.HostId == @ViewBag.User.Id)
+            {
+                <button id="changeStreamSettings" type="button" onclick="goFullscreen()" class="btn btn-primary">
+                    <img class="icon-message" alt="deniedIcon" src="~/img/icons/Settings.svg"/>
+                    Change stream settings
+                </button>
+            }
+            <button id="restartConnection" type="button" onclick="goFullscreen()" class="btn btn-danger">
+                <img class="icon-message" alt="deniedIcon" src="~/img/icons/Restart.svg"/>
+                Restart instance
+            </button>
+        </div>
+    </div>
+}
+<br/>
+<script>
+    const configuration = 
+        {
+        iceServers: [
+            { urls: 'stun:stun.sipsorcery.com' },
+        ]
+    };
+    let pc;
+    
+    class WebSocketClient 
+    {
+        constructor(url) 
+        {
+            this.socket = new WebSocket(url);
+
+            this.socket.onopen = async () =>
+            {
+                await delay(1000);
+                const message =
+                    {
+                        Type: 7,
+                        Data:
+                            {
+                                id: userId,
+                                name: userName
+                            }
+                    };
+                this.send(JSON.stringify(message));
+                console.log(JSON.stringify(message));
+            };
+
+            this.socket.onmessage = async (event) =>
+            {
+                console.log("New message: " + JSON.stringify(event.data, null, 2));
+                const message = JSON.parse(event.data);
+                if (message.Data.status == 3)
+                {
+                    loadingLabel.textContent = "Waiting for room assign..."
+                    console.log("Coordinator connection established.");
+                    const messageNew =
+                        {
+                            UserID: userId,
+                            Type: 6,
+                            Data:
+                                {
+                                    RoomName: RoomName,
+                                    RoomId: RoomID,
+                                    Type: 3
+                                }
+                        };
+                    this.send(JSON.stringify(messageNew))
+                }
+                else if (message.Type == 6 && message.Data.Type == 7)
+                {
+                    makeDivLoading("Host leaved. Waiting for reconnect...");
+                    document.getElementById('videoCtl').remove();
+                    const newVideo = document.createElement("video");
+                    newVideo.id = "videoCtl";
+                    newVideo.classList.add("video-stream");
+                    newVideo.autoplay = true;
+                    document.getElementById('fullscreen-container').insertBefore(newVideo, document.getElementById('loadingDiv').nextSibling);
+                    pc = new RTCPeerConnection();
+                    pc.ontrack = evt =>
+                    {
+                        console.log(evt.streams[0]);
+                        console.log(evt.streams[0].getTracks().map(t => t.readyState));
+                        document.getElementById("videoCtl").srcObject = new MediaStream(evt.streams[0].getTracks());
+                        videoCtl.muted = true;
+                        console.warn("new track 12312312");
+                    }
+
+                    pc.onconnectionstatechange = async () =>
+                    {
+                        console.log("ConnState:", pc.connectionState);
+                        console.log("IceState:", pc.iceConnectionState);
+                        if (pc.connectionState == "connected")
+                        {
+                            isConnected = true;
+                            if (userId == hostId)
+                            {
+                                loadingLabel.textContent = `Connection to ${RoomName} with id ${RoomID} as host established.`;
+                            }
+                            else
+                            {
+                                loadingLabel.textContent = `Connection to ${RoomName} with id ${RoomID} established.`;
+                            }
+                            loadingDiv.classList.remove("alert-primary");
+                            loadingDiv.classList.add("alert-success");
+                            const spinnerContainer = document.querySelector(".spinner-main");
+                            spinnerContainer.innerHTML = "";
+                            const img = document.createElement("img");
+                            img.src = "/img/icons/StatusOK.svg";
+                            img.classList.add("icon-message");
+                            spinnerContainer.appendChild(img);
+                            document.title = "Session " + RoomName;
+
+                        }
+                    }
+
+                    pc.onicecandidate = e =>
+                    {
+                        if (e.candidate)
+                        {
+                            console.log(`ICE: ${e.candidate.candidate}`);
+                            const messageNew =
+                                {
+                                    UserID: userId,
+                                    Type: 2,
+                                    Data:
+                                        {
+                                            RequestType: 2,
+                                            PeerID: PeerID,
+                                            RoomID: RoomID,
+                                            Data: e.candidate
+                                        }
+                                };
+                            console.log(messageNew.Data.Data);
+                            wsClient.send(JSON.stringify(messageNew));
+                        }
+                    };
+                }
+                else if (message.Type == 6 && !message.Data.isHostConnected && hostId != userId)
+                {
+                    console.log(JSON.stringify(message));
+                    makeDivLoading("Waiting for host...");
+                }
+                else if (message.Type == 6 && message.Data.Type == 6 && hostId != userId)
+                {
+                    loadingLabel.textContent = "Waiting for Web RTC negotiation...";
+                    const messageNew =
+                        {
+                            UserID: userId,
+                            Type: 2,
+                            Data:
+                                {
+                                    RequestType: 3,
+                                    PeerID: PeerID,
+                                    RoomID: RoomID,
+                                    Data: null
+                                }
+                        };
+                    this.send(JSON.stringify(messageNew));
+                }
+                else if (message.Type == 6)
+                {
+                    PeerID = message.Data.PeerID;
+                    makeDivLoading("Waiting for Web RTC negotiation...");
+                    const messageNew =
+                        {
+                            UserID: userId,
+                            Type: 2,
+                            Data:
+                                {
+                                    RequestType: 3,
+                                    PeerID: PeerID,
+                                    RoomID: RoomID,
+                                    Data: null
+                                }
+                        };
+                    console.log("Room assigned.");
+                    console.log(JSON.stringify(messageNew));
+                    this.send(JSON.stringify(messageNew));
+                }
+                else if (message.Type == 2 && message.Data.Type == 3)
+                {
+                    console.log(`Remote Offer: ${message.Data.Data.sdp}`);
+                    await pc.setRemoteDescription(new RTCSessionDescription({
+                        type: typeMap[message.Data.Data.type],
+                        sdp: message.Data.Data.sdp
+                    }));
+                    pc.createAnswer()
+                        .then(answer => pc.setLocalDescription(answer))
+                        .then(() => {
+                            console.log(`Local Answer: ${pc.localDescription.sdp}`);
+                            const messageNew =
+                                {
+                                    UserID: userId,
+                                    Type: 2,
+                                    Data:
+                                        {
+                                            RequestType: 1,
+                                            PeerID: PeerID,
+                                            RoomID: RoomID,
+                                            Data: pc.localDescription
+                                        }
+                                };
+                            console.log(messageNew.Data.Data);
+                            this.socket.send(JSON.stringify(messageNew));
+                        });
+                }
+                else if (message.Type == 2 && message.Data.Type == 2)
+                {
+                    console.log(`Remote ICE: ${message.Data.Data}`);
+                    const candidate = new RTCIceCandidate({
+                        candidate: "candidate:" + message.Data.Data.candidate,
+                        sdpMLineIndex: message.Data.Data.sdpMLineIndex,
+                        sdpMid: null
+                    });
+                    await pc.addIceCandidate(candidate);
+                }
+                else
+                {
+                    
+                }
+            };
+
+            this.socket.onerror = (error) =>
+            {
+                console.log("WebSocket error. Connection failed. " + error.code, error.reason);
+            };
+
+            this.socket.onclose = (event) =>
+            {
+                if (pc.connectionState == "connected")
+                {
+                    makeDivInfo("Connection closed.");
+                }
+                else
+                {
+                    makeDivError("Connection failed.")
+                }
+                pc.close();
+            };
+        }
+
+        send(message) 
+        {
+            if (this.socket.readyState === WebSocket.OPEN) 
+            {
+                this.socket.send(message);
+            }
+        }
+    }
+    const typeMap = {
+            0: "answer",
+            1: "offer",
+            2: "pranswer",
+            3: "rollback"
+        };
+    let wsClient;
+    const loadingLabel = document.getElementById("loadingLabel")
+    const loadingDiv = document.getElementById("loadingDiv")
+
+    let userName = "@ViewBag.User.UserName";
+    let userId = "@ViewBag.User.Id";
+    let RoomID = "@Model.Id";
+    let PeerID = null;
+    let RoomName = "@Model.Name";
+    let RoomType = @((int)Model.RoomType);
+    let hostId = "@Model.HostId";
+    let isConnected = false;
+
+    function delay(ms) 
+    {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    async function connect()
+    {
+        pc = new RTCPeerConnection();
+        pc.ontrack = evt =>
+        {
+            document.getElementById("videoCtl").srcObject = new MediaStream(evt.streams[0].getTracks());
+            console.warn("new track 12312312");
+        }
+        pc.onconnectionstatechange = async () =>
+        {
+            console.log("ConnState:", pc.connectionState);
+            console.log("IceState:", pc.iceConnectionState);
+            if (pc.connectionState == "connected")
+            {
+                isConnected = true;
+                if (userId == hostId)
+                {
+                    loadingLabel.textContent = `Connection to ${RoomName} with id ${RoomID} as host established.`;
+                }
+                else
+                {
+                    loadingLabel.textContent = `Connection to ${RoomName} with id ${RoomID} established.`;
+                }
+                loadingDiv.classList.remove("alert-primary");
+                loadingDiv.classList.add("alert-success");
+                const spinnerContainer = document.querySelector(".spinner-main");
+                spinnerContainer.innerHTML = "";
+                const img = document.createElement("img");
+                img.src = "/img/icons/StatusOK.svg";
+                img.classList.add("icon-message");
+                spinnerContainer.appendChild(img);
+                document.title = "Session " + RoomName;
+            }
+            
+        }
+
+        pc.onicecandidate = e =>
+        {
+            if (e.candidate)
+            {
+                console.log(`ICE: ${e.candidate.candidate}`);
+                const messageNew =
+                    {
+                        UserID: userId,
+                        Type: 2,
+                        Data:
+                            {
+                                RequestType: 2,
+                                PeerID: PeerID,
+                                RoomID: RoomID,
+                                Data: e.candidate
+                            }
+                    };
+                console.log(messageNew.Data.Data);
+                wsClient.send(JSON.stringify(messageNew));
+            }
+        };
+        wsClient = new WebSocketClient("wss://95.31.35.144:26666");
+        document.getElementById('connectButton').disabled = true;
+    }
+    async function startCapture() 
+    {
+        try
+        {
+            pc = new RTCPeerConnection();
+            pc.onconnectionstatechange = async () =>
+            {
+                console.log("ConnState:", pc.connectionState);
+                console.log("IceState:", pc.iceConnectionState);
+                if (pc.connectionState == "connected")
+                {
+                    isConnected = true;
+                    if (userId == hostId)
+                    {
+                        loadingLabel.textContent = `Connection to ${RoomName} with id ${RoomID} as host established.`;
+                    }
+                    else
+                    {
+                        loadingLabel.textContent = `Connection to ${RoomName} with id ${RoomID} established.`;
+                    }
+                    loadingDiv.classList.remove("alert-primary");
+                    loadingDiv.classList.add("alert-success");
+                    const spinnerContainer = document.querySelector(".spinner-main");
+                    spinnerContainer.innerHTML = "";
+                    const img = document.createElement("img");
+                    img.src = "/img/icons/StatusOK.svg";
+                    img.classList.add("icon-message");
+                    spinnerContainer.appendChild(img);
+                    document.title = "Session " + RoomName;
+                }
+            }
+
+            pc.onicecandidate = e =>
+            {
+                if (e.candidate)
+                {
+                    console.log(`ICE: ${e.candidate.candidate}`);
+                    const messageNew =
+                        {
+                            UserID: userId,
+                            Type: 2,
+                            Data:
+                                {
+                                    RequestType: 2,
+                                    PeerID: PeerID,
+                                    RoomID: RoomID,
+                                    Data: e.candidate
+                                }
+                        };
+                    console.log(messageNew.Data.Data);
+                    wsClient.send(JSON.stringify(messageNew));
+                }
+            };
+            makeDivLoading("Waiting for server response...");
+            const captureStm = await navigator.mediaDevices.getDisplayMedia({
+                video:
+                    {
+                        frameRate:
+                            {
+                                ideal: 30,
+                                max: 30
+                            }
+                    }
+            });
+            document.getElementById("videoCtl").srcObject = captureStm;
+            captureStm.getTracks().forEach(track => {
+                console.log('add local track ' + track.kind + ' to peer connection.');
+                console.log(track);
+                pc.addTrack(track, captureStm);
+            });
+            wsClient = new WebSocketClient("wss://95.31.35.144:26666");
+        } 
+        catch (err) 
+        {
+            console.error("Не удалось начать захват экрана автоматически:", err);
+        }
+    }
+
+    async function restartCapture()
+    {
+        wsClient.close();
+        
+        document.querySelector('#videoCtl').srcObject = null;
+        pc = new RTCPeerConnection();
+        userName = "@ViewBag.User.UserName";
+        userId = "@ViewBag.User.Id";
+        RoomID = "@Model.Id";
+        PeerID = null;
+        RoomName = "@Model.Name";
+        hostId = "@Model.HostId";
+        isConnected = false;
+        wsClient = new WebSocketClient("wss://localhost:26666");
+    }
+
+    function goFullscreen() 
+    {
+        const video = document.getElementById("fullscreen-container").requestFullscreen();
+        document.getElementById('videoCtl').classList.remove('.video-stream');
+        button.textContent = "Exit fullscreen mode";
+        button.replaceWith(button.cloneNode(true));
+        
+        document.getElementById('goFullscreen').addEventListener("click", exitFull());
+    }
+
+    function toggleFullscreen() {
+        const doc = window.document;
+        const docEl = document.getElementById("fullscreen-container");
+        const button = document.getElementById("goFullscreen");
+        const img = document.createElement("img");
+        img.src = "/img/icons/AutoSizeOptimize.svg";
+        img.classList.add("icon-message");
+        button.textContent = "";
+        const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+        const exitFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+        if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+            requestFullScreen.call(docEl);
+            button.appendChild(img);
+            const text = document.createTextNode("Exit fullscreen mode");
+            button.appendChild(text);
+        } else {
+            exitFullScreen.call(doc);
+            button.appendChild(img);
+            const text = document.createTextNode("Enter fullscreen mode");
+            button.appendChild(text);
+        }
+    }
+    
+    function makeDivLoading(text)
+    {
+        const alertDiv = document.getElementById("loadingDiv");
+        loadingLabel.textContent = text;
+        alertDiv.classList.forEach(cls => {
+            if (cls.startsWith("alert-")) {
+                alertDiv.classList.remove(cls);
+            }
+        });
+        loadingDiv.classList.add("alert-primary");
+        const images = loadingDiv.querySelectorAll("img");
+        images.forEach(img => img.remove());
+        const childDiv = document.createElement("div");
+        childDiv.id = "spinnerContainer";
+        childDiv.classList.add("spinner-main");
+        childDiv.setAttribute("style", "margin-bottom: 3px");
+        const previsoContainer = document.getElementById("spinnerContainer");
+        if (previsoContainer)
+        {
+            previsoContainer.remove();
+        }
+        loadingDiv.prepend(childDiv);
+        const spinnerContainer = document.getElementById("spinnerContainer");
+        spinnerContainer.innerHTML = "<div class=\"spinner-border\" role=\"status\">\n" +
+                                    "<span class=\"visually-hidden\"></span>\n" +
+                                    "</div>";
+    }
+
+    function makeDivError(text)
+    {
+        const alertDiv = document.getElementById("loadingDiv");
+        loadingLabel.textContent = text;
+        alertDiv.classList.forEach(cls => {
+            if (cls.startsWith("alert-")) {
+                alertDiv.classList.remove(cls);
+            }
+        });
+        loadingDiv.classList.add("alert-danger");
+        const spinnerContainer = document.getElementById("spinnerContainer");
+        spinnerContainer.innerHTML = "";
+        const images = spinnerContainer.querySelectorAll("img");
+        images.forEach(img => img.remove());
+        const img = document.createElement("img");
+        img.src = "/img/icons/StatusNo.svg";
+        img.classList.add("icon-message");
+        spinnerContainer.appendChild(img);
+    }
+
+    function makeDivSucsses(text)
+    {
+        const alertDiv = document.getElementById("loadingDiv");
+        loadingLabel.textContent = text;
+        alertDiv.classList.forEach(cls => {
+            if (cls.startsWith("alert-")) {
+                alertDiv.classList.remove(cls);
+            }
+        });
+        loadingDiv.classList.add("alert-success");
+        const spinnerContainer = document.getElementById("spinnerContainer");
+        spinnerContainer.innerHTML = "";
+        const images = spinnerContainer.querySelectorAll("img");
+        images.forEach(img => img.remove());
+        const img = document.createElement("img");
+        img.src = "/img/icons/StatusOK.svg";
+        img.classList.add("icon-message");
+        spinnerContainer.appendChild(img);
+    }
+
+    function makeDivInfo(text)
+    {
+        const alertDiv = document.getElementById("loadingDiv");
+        loadingLabel.textContent = text;
+        alertDiv.classList.forEach(cls => {
+            if (cls.startsWith("alert-")) {
+                alertDiv.classList.remove(cls);
+            }
+        });
+        loadingDiv.classList.add("alert-primary");
+        const spinnerContainer = document.getElementById("spinnerContainer");
+        if (spinnerContainer)
+        spinnerContainer.innerHTML = "";
+        const img = document.createElement("img");
+        const images = spinnerContainer.querySelectorAll("img");
+        images.forEach(img => img.remove());
+        img.src = "/img/icons/StatusInformation.svg";
+        img.classList.add("icon-message");
+        spinnerContainer.appendChild(img);
+    }
+    
+    function addEndCapButton()
+    {
+        
+    }
+    
+</script>
+

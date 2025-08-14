@@ -1,0 +1,76 @@
+﻿@using MessagesModels
+@using MessagesModels.Enums
+@model MessagesModels.Models.RoomModel
+@{
+    ViewData["Title"] = "Session creation";
+}
+<head>
+    <title>Login</title>
+</head>
+@if (TempData["Error"] != null)
+{
+    @if ((CreateRoomResult)TempData["Error"]! != CreateRoomResult.NoError)
+    {
+        <div class="alert alert-danger alert-dismissible d-flex align-items-end" role="alert">
+            <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusNo.svg"/>
+            <div>
+                @if ((CreateRoomResult)TempData["Error"]! == CreateRoomResult.NameAlreadyUsed)
+                {
+                    <label>Room with name "@Model.Name" already exists.</label>
+                }
+                else
+                {
+                    <label>Not excepted error. Code: @((int)TempData["Error"]!) (@TempData["Error"])</label>
+                }
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-success alert-dismissible d-flex align-items-end" role="alert">
+            <img class="icon-message" alt="deniedIcon" src="~/img/icons/StatusOK.svg"/>
+            <div>
+                <label>Room with name "@Model.Name" created.</label>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+}
+<h1>Create new Web Video Session</h1>
+    <form autocomplete="off" asp-controller="Session" asp-action="StartNewSession" novalidate>
+        <div class="mb-3">
+            <label class="form-label">Room name</label>
+            <input asp-for="Name" class="form-control">
+            <div class="form-text">
+                <img class="icon-tip" alt="TipIcon" src="~/img/icons/StatusInformation.12.12.svg"/>
+                Use only english letters.
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select asp-for="RoomType" class="form-select" aria-label="Default select example">
+                <option value="1">Video</option>
+                <option value="2">Chat</option>
+                <option value="3">Voice</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Capacity</label>
+            <input asp-for="Capacity" type="number" class="form-control" >
+        </div>
+        <div class="mb-3 form-check">
+            <input asp-for="IsAudioRequested" type="checkbox" class="form-check-input" >
+            <label class="form-check-label">Transfer audio</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Create room</button>
+        <div class="form-text">
+            <img class="icon-tip" alt="TipIcon" src="~/img/icons/StatusInformation.12.12.svg"/>
+            You will be automatically assigned as a host. If you disconnect, the group will be deleted.
+        </div>
+    </form>
+
+<script>
+    
+    
+</script>
